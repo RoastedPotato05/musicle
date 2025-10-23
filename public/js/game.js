@@ -1,4 +1,6 @@
 // game.js: Spotify IFrame-based Musicle playback
+console.log("Game JS loaded, waiting for Spotify IFrame API...");
+
 (function(){
   const songs = JSON.parse(sessionStorage.getItem('musicle_songs') || 'null');
   const playlistName = sessionStorage.getItem('musicle_playlist_name') || '';
@@ -89,6 +91,7 @@
 
   // Spotify IFrame API integration
   window.onSpotifyIframeApiReady = IFrameAPI => {
+    console.log("Spotify IFrame API ready fired!");
     const element = document.getElementById('embed-iframe');
     const options = { width: 0, height: 0, uri: '' };
     const callback = EmbedController => {

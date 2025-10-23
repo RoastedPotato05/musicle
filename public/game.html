@@ -37,7 +37,12 @@
     <div id="debug" class="muted small"></div>
   </div>
 
-  <!-- Spotify IFrame API -->
-  <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
-  <script src="/js/game.js"></script>
+  <!-- Hidden Spotify embed iframe -->
+    <div id="embed-iframe"></div>
+
+    <!-- Load Spotify IFrame API first -->
+    <script src="https://open.spotify.com/embed/iframe-api/v1" defer></script>
+
+    <!-- Load your game logic AFTER -->
+    <script defer src="/js/game.js"></script>
 </body>
