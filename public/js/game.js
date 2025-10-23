@@ -1,9 +1,8 @@
-// game.js: client-side game logic
+// game.js: Spotify IFrame-based Musicle playback
 (function(){
   const songs = JSON.parse(sessionStorage.getItem('musicle_songs') || 'null');
   const playlistName = sessionStorage.getItem('musicle_playlist_name') || '';
   if (!songs || !Array.isArray(songs) || songs.length === 0) {
-    // nothing loaded — go back
     location.href = '/';
     return;
   }
@@ -11,20 +10,21 @@
   document.getElementById('title').textContent = 'Musicle — ' + (playlistName || 'Playlist');
   document.getElementById('meta').textContent = `${songs.length} tracks loaded.`;
 
-  // state
+  // game state
   let indexOrder = shuffle(Array.from({length: songs.length}, (_, i) => i));
   let currentIndex = 0;
-  let attemptsLeft = 3;
-  let audio = null;
+  let fails = 0;
+  let controller = null;
+  let currentTrack = null;
 
   const trackInfoEl = document.getElementById('track-info');
-  const playBtn = document.getElementById('play-btn');
-  const skipBtn = document.getElementById('skip-btn');
+  const playBtn = document.getElementById('spotify-play-btn');
+  const playText = document.getElementById('play-text');
   const guessInput = document.getElementById('guess-input');
   const guessBtn = document.getElementById('guess-btn');
   const guessList = document.getElementById('guess-list');
-  const debug = document.getElementById('debug');
 
+  // shuffle helper
   function shuffle(a) {
     for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -38,29 +38,15 @@
   }
 
   function renderTrack() {
-    const t = getCurrentTrack();
-    trackInfoEl.innerHTML = `<strong>Track ${currentIndex + 1}/${songs.length}</strong><div class="muted">Preview available: ${t.preview ? 'Yes' : 'No'}</div>`;
-    attemptsLeft = 3;
+    currentTrack = getCurrentTrack();
+    trackInfoEl.innerHTML = `<strong>Track ${currentIndex + 1}/${songs.length}</strong><div class="muted">${currentTrack.title} — ${currentTrack.artist}</div>`;
     guessList.innerHTML = '';
-    if (audio) { audio.pause(); audio = null; }
-  }
+    guessInput.value = '';
+    fails = 0;
 
-  async function playPreview() {
-    const t = getCurrentTrack();
-    if (!t) {
-      return;
-    }
-    if (!t.preview) {
-      alert('No preview available for this track. You may still guess from memory or skip.');
-      return;
-    }
-    if (audio) { audio.pause(); audio = null; }
-    audio = new Audio(t.preview);
-    try {
-      await audio.play();
-    } catch (err) {
-      console.warn('Playback error', err);
-      alert('Playback failed. Your browser may block autoplay — try clicking Play again or allow audio.');
+    // load the new track in Spotify embed controller
+    if (controller) {
+      controller.loadUri(currentTrack.spotify_url.replace('https://open.spotify.com/', 'spotify:'));
     }
   }
 
@@ -70,84 +56,72 @@
   }
 
   function checkGuess(guess) {
-    if (!guess) return false;
-    const t = getCurrentTrack();
-    // check title or artist loosely
-    const title = t.title || t.title_name || t.track || '';
-    const artist = t.artist || '';
-    const { looseMatch } = window; // util functions added below
-    const matchedTitle = looseMatch(guess, title);
-    const matchedArtist = looseMatch(guess, artist);
-    return matchedTitle || matchedArtist;
+    const normalize = str => (str || '').toLowerCase().replace(/[^\w\s]/g, '').trim();
+    const g = normalize(guess);
+    const title = normalize(currentTrack.title);
+    const artist = normalize(currentTrack.artist);
+    return g && (title.includes(g) || artist.includes(g));
   }
 
   guessBtn.addEventListener('click', () => {
-    const guess = guessInput.value && guessInput.value.trim();
+    const guess = guessInput.value.trim();
     if (!guess) return;
-    // add to history
+
     const li = document.createElement('li');
     li.textContent = guess;
     guessList.appendChild(li);
 
     if (checkGuess(guess)) {
-      // win for this round; advance or finish
-      const t = getCurrentTrack();
-      const message = `Correct! "${t.title}" — ${t.artist}`;
-      // decide whether to finish the entire game or move to next track
-      // For parity with your PHP flow, assume winning the round finishes game
-      finishGame(true, message);
-      return;
+      const msg = `Correct! "${currentTrack.title}" — ${currentTrack.artist}`;
+      finishGame(true, msg);
     } else {
-      attemptsLeft--;
-      if (attemptsLeft <= 0) {
-        // out of attempts => lose
-        const t = getCurrentTrack();
-        const message = `Out of attempts. Answer was "${t.title}" — ${t.artist}`;
-        finishGame(false, message);
-        return;
+      fails++;
+      if (fails >= 6) {
+        const msg = `Out of attempts. Answer was "${currentTrack.title}" — ${currentTrack.artist}`;
+        finishGame(false, msg);
       } else {
-        alert(`Incorrect. ${attemptsLeft} attempts left for this track.`);
+        alert(`Incorrect. ${3 - fails} attempts left.`);
       }
     }
     guessInput.value = '';
     guessInput.focus();
   });
 
-  skipBtn.addEventListener('click', () => {
-    // skip goes to next track; if no more tracks, lose
-    currentIndex++;
-    if (currentIndex >= indexOrder.length) {
-      finishGame(false, 'No more tracks to play.');
-      return;
+  // Spotify IFrame API integration
+  window.onSpotifyIframeApiReady = IFrameAPI => {
+    const element = document.getElementById('embed-iframe');
+    const options = { width: 0, height: 0, uri: '' };
+    const callback = EmbedController => {
+      controller = EmbedController;
+      controller.addListener('ready', () => {
+        console.log('Spotify IFrame ready');
+        renderTrack();
+      });
+
+      controller.addListener('playback_update', e => {
+        if (!e.data || e.data.isPaused === undefined) return;
+        const seconds = parseInt(e.data.position / 1000, 10);
+
+        // pause playback based on number of fails (like your PHP logic)
+        const limits = [1, 3, 6, 10, 15, 30];
+        if (seconds >= limits[Math.min(fails, limits.length - 1)]) {
+          controller.pause();
+        }
+
+        // change button label dynamically
+        if (e.data.isPaused) {
+          playText.textContent = 'Play';
+        } else {
+          playText.textContent = 'Pause';
+        }
+      });
+    };
+    IFrameAPI.createController(element, options, callback);
+  };
+
+  playBtn.addEventListener('click', () => {
+    if (controller) {
+      controller.togglePlay();
     }
-    renderTrack();
   });
-
-  playBtn.addEventListener('click', () => playPreview());
-
-  // expose util functions for simpler imports (we didn't bundle util.js here)
-  // to keep things self-contained, copy the utility functions inline:
-  window.normalize = function(str){
-    if (!str) return '';
-    return str.toLowerCase()
-      .replace(/[’']/g, "'")
-      .replace(/[^\w\s]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-  };
-  window.looseMatch = function(guess, answer) {
-    const g = window.normalize(guess || '');
-    const a = window.normalize(answer || '');
-    if (!g || !a) return false;
-    if (g === a) return true;
-    if (a.includes(g)) return true;
-    const aw = a.split(' ').filter(Boolean).filter(w => w.length > 2);
-    const gw = g.split(' ').filter(Boolean).filter(w => w.length > 2);
-    if (!aw.length || !gw.length) return false;
-    const matches = aw.filter(w => gw.includes(w));
-    return matches.length >= 1;
-  };
-
-  // initialize first track
-  renderTrack();
 })();

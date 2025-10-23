@@ -1,21 +1,25 @@
-<!doctype html>
-<html>
 <head>
-  <meta charset="utf-8" />
-  <title>Musicle — Game</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 </head>
+
 <body>
   <div class="container">
     <h1 id="title">Musicle — Game</h1>
     <div id="meta" class="muted"></div>
 
+    <!-- Hidden Spotify embed iframe -->
+    <div id="embed-iframe"></div>
+
     <div id="player" class="card">
       <div id="track-info">Loading track...</div>
+
       <div class="controls">
-        <button id="play-btn">Play Preview</button>
-        <button id="skip-btn">Skip</button>
+        <!-- Play/pause button that links to Spotify embed -->
+        <button id="spotify-play-btn"
+          class="play w3-bottombar w3-leftbar w3-rightbar w3-topbar w3-border-green w3-button w3-green w3-circle"
+          style="height: 100px; width: 100px; margin: 0 auto; display: table; justify-content: center;">
+          <div id="play-text" style="margin: 0 auto; display: flex; justify-content: center; font-size: 200%;"><b>Play</b></div>
+        </button>
       </div>
     </div>
 
@@ -33,6 +37,7 @@
     <div id="debug" class="muted small"></div>
   </div>
 
+  <!-- Spotify IFrame API -->
+  <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
   <script src="/js/game.js"></script>
 </body>
-</html>
