@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>You won — Musicle</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 You Win!</h1>
+    <p id="win-msg"></p>
+
+    <div class="card">
+      <button onclick="location.href='index.html'">Back to Home</button>
+      <button onclick="location.href='game.html'">Play Again (same playlist)</button>
+    </div>
+  </div>
+
+  <script>
+    // optionally show some details passed via sessionStorage
+    const data = JSON.parse(sessionStorage.getItem('musicle_result') || 'null');
+    if (data && data.message) {
+      document.getElementById('win-msg').textContent = data.message;
+    } else {
+      document.getElementById('win-msg').textContent = 'Nice job!';
+    }
+  </script>
+</body>
+</html>

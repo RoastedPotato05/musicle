@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Musicle — Game</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1 id="title">Musicle — Game</h1>
+    <div id="meta" class="muted"></div>
+
+    <div id="player" class="card">
+      <div id="track-info">Loading track...</div>
+      <div class="controls">
+        <button id="play-btn">Play Preview</button>
+        <button id="skip-btn">Skip</button>
+      </div>
+    </div>
+
+    <div id="guess-area" class="card">
+      <input id="guess-input" placeholder="Type song name or artist" />
+      <button id="guess-btn">Guess</button>
+      <p id="hint" class="muted">You get 3 attempts per track.</p>
+    </div>
+
+    <div id="history" class="card">
+      <h3>Guesses</h3>
+      <ul id="guess-list"></ul>
+    </div>
+
+    <div id="debug" class="muted small"></div>
+  </div>
+
+  <script src="/js/game.js"></script>
+</body>
+</html>

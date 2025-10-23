@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>You lost — Musicle</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>😕 Game Over</h1>
+    <p id="lose-msg"></p>
+
+    <div class="card">
+      <button onclick="location.href='index.html'">Back to Home</button>
+      <button onclick="location.href='game.html'">Try Again (same playlist)</button>
+    </div>
+  </div>
+
+  <script>
+    const data = JSON.parse(sessionStorage.getItem('musicle_result') || 'null');
+    if (data && data.message) {
+      document.getElementById('lose-msg').textContent = data.message;
+    } else {
+      document.getElementById('lose-msg').textContent = 'Better luck next time!';
+    }
+  </script>
+</body>
+</html>
